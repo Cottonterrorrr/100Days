@@ -12,27 +12,27 @@ scoreboard = Scoreboard()
 screen.listen()
 screen.onkeypress(player.move, "Up")
 
-cars = [CarManager()]
+car_manager = CarManager()
 
-counter = 0
+
 game_is_on = True
 while game_is_on:
     time.sleep(0.1)
     screen.update()
 
-    for c in cars:
-        c.move_car()
-        if player.distance(c) < 10:
+    car_manager.create_car()
+    car_manager.move_cars()
+
+    # Detect collision with a car
+    for car in car_manager.all_cars:
+        if car.distance(player) < 20:
             scoreboard.game_over()
+            game_is_on = False
 
-    if counter == 6:
-        cars.append(CarManager())
-        counter = 1
-
-    if player.ycor() > 260:
-        player.refresh()
+    # Detect successful crossing
+    if player.is_at_finish_line():
+        player.go_to_start()
+        car_manager.level_up()
         scoreboard.increase_score()
-        for c in cars:
-            c.speedo += 5
-    counter += 1
 
+screen.exitonclick()
