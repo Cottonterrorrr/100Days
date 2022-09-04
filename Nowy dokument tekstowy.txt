@@ -1,0 +1,194 @@
+      ******************************************************************
+      * Author:
+      * Date:
+      * Purpose:
+      * Tectonics: cobc
+      ******************************************************************
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. YOUR-PROGRAM-NAME.
+       DATA DIVISION.
+       FILE SECTION.
+       WORKING-STORAGE SECTION.
+
+
+           01 WS-GL.
+               10 WS-GL-CTRIM-INPUT            PIC X(150).
+               10 WS-GL-CTRIM-COUNT            PIC 9(3).
+               10 WS-GL-CTRIM-START            PIC 9(3).
+               10 WS-GL-CTRIM-TEMP             PIC 9(3).
+               10 WS-GL-CBUF-IN                PIC X(150).
+
+               10 WS-STR-BUF.
+                  15 WS-STRBUF-COUNT           PIC 9(4).
+                  15 WS-STRBUF-CONTENTS        PIC X(150).
+                  15 WS-STRBUF-IN              PIC 9(4).
+
+           01 ILOSC-POL                       PIC 9(3).
+           01 TABELA-POL OCCURS 50 TIMES.
+               10 POLE-WARTOSC                PIC X(150).
+               10 TYP-POLA                    PIC X(1).
+                   88 IS-ALPHANUMERIC         VALUE 'A'.
+                   88 IS-NUMERIC              VALUE 'N'.
+                   88 IS-DATE                 VALUE 'D'.
+
+           01 POLE                            PIC 9(3).
+
+           01 LICZ                            PIC 9(3).
+           01 DANE                            PIC X(2000). 
+           01 L-ZEROS                         PIC 9(3).
+           01 NUM-ZERO                        PIC X(150).
+
+
+       PROCEDURE DIVISION.
+       Begin.
+
+
+                 MOVE '     001234 ' TO POLE-WARTOSC(1).
+                 MOVE '  0034563 ' TO POLE-WARTOSC(2).
+                 MOVE '  02.03.2021  ' TO POLE-WARTOSC(3).
+                 MOVE '20-21-2019   ' TO POLE-WARTOSC(4).
+                 
+                 SET IS-ALPHANUMERIC(1) TO  TRUE
+                 SET IS-NUMERIC(2)      TO  TRUE
+                 SET IS-DATE(3)      TO  TRUE
+                 SET IS-DATE(4) TO  TRUE
+
+           MOVE 1 TO LICZ
+           MOVE 1 TO POLE
+          
+           MOVE 4 TO ILOSC-POL
+           
+           DISPLAY 'START'
+           PERFORM ILOSC-POL TIMES
+       
+               MOVE POLE-WARTOSC(POLE) TO WS-GL-CBUF-IN
+               PERFORM 2200-ADD-TO-BUFFER   
+               
+               EVALUATE TRUE
+                   WHEN IS-ALPHANUMERIC(POLE)
+                       PERFORM 2200-ALPHANUMERIC
+                   WHEN IS-NUMERIC(POLE)       
+                       PERFORM 2200-NUMERIC
+                   WHEN IS-DATE(POLE)          
+                       PERFORM 2200-DATA
+               END-EVALUATE
+               
+           
+      *   MOVE POLE-WARTOSC(POLE) TO WS-GL-CBUF-IN
+      *   PERFORM 2200-ADD-TO-BUFFER
+      *   PERFORM 2200-ALPHANUMERIC 
+               DISPLAY "DANE  :" DANE    
+               ADD 1 TO POLE
+           END-PERFORM        
+               
+
+
+
+           STOP RUN.
+           
+            2200-TRIM.
+                       
+           IF WS-GL-CTRIM-INPUT  = SPACES
+
+               MOVE 1 TO WS-GL-CTRIM-TEMP
+               MOVE 1 TO WS-GL-CTRIM-START
+               MOVE 0 TO WS-GL-CTRIM-COUNT
+               MOVE 0 TO L-ZEROS
+           ELSE
+               MOVE 0 TO WS-GL-CTRIM-TEMP
+               MOVE 0 TO WS-GL-CTRIM-START
+               MOVE 0 TO WS-GL-CTRIM-COUNT
+               MOVE 0 TO L-ZEROS
+
+               INSPECT WS-GL-CTRIM-INPUT TALLYING WS-GL-CTRIM-START
+                   FOR LEADING SPACES
+               INSPECT FUNCTION REVERSE(WS-GL-CTRIM-INPUT) TALLYING
+                   WS-GL-CTRIM-TEMP FOR LEADING SPACES
+               COMPUTE WS-GL-CTRIM-COUNT =
+                   FUNCTION LENGTH(WS-GL-CTRIM-INPUT)
+                       - WS-GL-CTRIM-START
+                       - WS-GL-CTRIM-TEMP
+
+                   COMPUTE WS-GL-CTRIM-START = WS-GL-CTRIM-START + 1
+               
+      *        DISPLAY 'WS-GL-CTRIM-START ' WS-GL-CTRIM-START
+      *        DISPLAY "WS-GL-CTRIM-TEMP " WS-GL-CTRIM-TEMP
+      *        DISPLAY 'WS-GL-CTRIM-COUNT ' WS-GL-CTRIM-COUNT
+
+
+               END-IF
+                .
+           2200-ADD-TO-BUFFER.
+               INITIALIZE WS-GL-CTRIM-INPUT
+               MOVE WS-GL-CBUF-IN TO WS-GL-CTRIM-INPUT
+               PERFORM 2200-TRIM
+
+
+           
+      *         TO WS-STRBUF-CONTENTS(WS-STRBUF-COUNT:WS-GL-CTRIM-COUNT)
+      *         TO  WS-STRBUF-CONTENTS
+      *       STRING WS-GL-CBUF-IN(WS-GL-CTRIM-START:WS-GL-CTRIM-COUNT)
+      *       DELIMITED BY SIZE INTO WS-STRBUF-CONTENTS
+      *       END-STRING 
+            
+             ADD WS-GL-CTRIM-COUNT TO WS-STRBUF-COUNT
+             MOVE WS-GL-CBUF-IN(WS-GL-CTRIM-START:WS-GL-CTRIM-COUNT)
+                TO WS-STRBUF-CONTENTS(WS-STRBUF-COUNT:WS-GL-CTRIM-COUNT)
+             
+
+   
+      *       DISPLAY "WS-STRBUF-CONTENTS " 
+      *        WS-STRBUF-CONTENTS(WS-STRBUF-COUNT:WS-GL-CTRIM-COUNT)
+    
+                
+             
+             
+               INITIALIZE WS-GL-CBUF-IN
+               
+               .
+           2200-ALPHANUMERIC.
+            STRING '"' DELIMITED BY SIZE 
+            WS-STRBUF-CONTENTS(WS-STRBUF-COUNT:WS-GL-CTRIM-COUNT)
+            DELIMITED BY SIZE 
+            '"' DELIMITED BY SIZE 
+            ';' DELIMITED BY SIZE 
+            INTO DANE WITH POINTER LICZ
+             
+               END-STRING    
+               
+           .    
+           
+           2200-DATA.
+         
+            STRING 
+            WS-STRBUF-CONTENTS(WS-STRBUF-COUNT:WS-GL-CTRIM-COUNT)
+            DELIMITED BY SIZE              
+            ';' DELIMITED BY SIZE 
+            INTO DANE WITH POINTER LICZ
+             
+           END-STRING    
+               
+           .    
+           
+           2200-NUMERIC.
+
+       
+           INSPECT WS-STRBUF-CONTENTS(WS-STRBUF-COUNT:WS-GL-CTRIM-COUNT)
+           TALLYING L-ZEROS FOR LEADING ZEROS       
+           
+           INSPECT FUNCTION REVERSE(WS-GL-CTRIM-INPUT) TALLYING
+              WS-GL-CTRIM-TEMP FOR LEADING SPACES
+           COMPUTE WS-STRBUF-COUNT = WS-STRBUF-COUNT + L-ZEROS
+           COMPUTE WS-GL-CTRIM-COUNT = WS-GL-CTRIM-COUNT - L-ZEROS
+         
+                                 
+           STRING 
+            WS-STRBUF-CONTENTS(WS-STRBUF-COUNT:WS-GL-CTRIM-COUNT)
+            DELIMITED BY SIZE              
+            ';' DELIMITED BY SIZE 
+            INTO DANE WITH POINTER LICZ
+             
+           END-STRING
+           
+           .
+           
