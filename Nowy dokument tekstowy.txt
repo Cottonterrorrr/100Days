@@ -30,10 +30,14 @@
                    88 IS-ALPHANUMERIC         VALUE 'A'.
                    88 IS-NUMERIC              VALUE 'N'.
                    88 IS-DATE                 VALUE 'D'.
+               10 CZY-TRYM                    PIC X(1).
+                   88 TAK                     VALUE 'T'.
+                   88 NIE                     VALUE 'N'.
+                   88 NIE-DOTYCZY             VALUE 'D'.
 
            01 POLE                            PIC 9(3).
 
-           01 LICZ                            PIC 9(3).
+           01 LICZ                            PIC 9(4).
            01 DANE                            PIC X(2000). 
            01 L-ZEROS                         PIC 9(3).
            01 NUM-ZERO                        PIC X(150).
@@ -43,7 +47,7 @@
        Begin.
 
 
-                 MOVE '     001234 ' TO POLE-WARTOSC(1).
+                 MOVE ' ADADA  ' TO POLE-WARTOSC(1).
                  MOVE '  0034563 ' TO POLE-WARTOSC(2).
                  MOVE '  02.03.2021  ' TO POLE-WARTOSC(3).
                  MOVE '20-21-2019   ' TO POLE-WARTOSC(4).
@@ -52,6 +56,12 @@
                  SET IS-NUMERIC(2)      TO  TRUE
                  SET IS-DATE(3)      TO  TRUE
                  SET IS-DATE(4) TO  TRUE
+                 
+                 
+                 SET TAK(1)      TO  TRUE
+                 SET TAK(2)      TO  TRUE
+                 SET NIE(3)      TO  TRUE
+                 SET NIE(4)      TO  TRUE
 
            MOVE 1 TO LICZ
            MOVE 1 TO POLE
@@ -62,16 +72,29 @@
            PERFORM ILOSC-POL TIMES
        
                MOVE POLE-WARTOSC(POLE) TO WS-GL-CBUF-IN
-               PERFORM 2200-ADD-TO-BUFFER   
-               
-               EVALUATE TRUE
-                   WHEN IS-ALPHANUMERIC(POLE)
-                       PERFORM 2200-ALPHANUMERIC
-                   WHEN IS-NUMERIC(POLE)       
-                       PERFORM 2200-NUMERIC
-                   WHEN IS-DATE(POLE)          
-                       PERFORM 2200-DATA
-               END-EVALUATE
+                
+               IF TAK(POLE)
+                   PERFORM 2200-ADD-TO-BUFFER 
+                   EVALUATE TRUE 
+                       WHEN IS-ALPHANUMERIC(POLE)                            
+                           PERFORM 2200-ALPHANUMERIC
+                       WHEN IS-NUMERIC(POLE)                              
+                           PERFORM 2200-NUMERIC
+                       WHEN IS-DATE(POLE)                       
+                           PERFORM 2200-DATA
+                   END-EVALUATE
+                ELSE
+                    PERFORM 2200-ADD-TO-BUFF-NIE-TRYM
+                     EVALUATE TRUE
+                       WHEN IS-ALPHANUMERIC(POLE)                         
+                           PERFORM 2200-ALPHANUMERIC-NIE
+                       WHEN IS-NUMERIC(POLE)         
+                           PERFORM 2200-NUMERIC-NIE-TRYM
+                       WHEN IS-DATE(POLE)  
+                           PERFORM 2200-DATA-NIE-TRYM
+                   END-EVALUATE
+               END-IF
+                    
                
            
       *   MOVE POLE-WARTOSC(POLE) TO WS-GL-CBUF-IN
@@ -156,7 +179,32 @@
              
                END-STRING    
                
-           .    
+           .   
+           2200-ALPHANUMERIC-NIE.
+            STRING '"' DELIMITED BY SIZE 
+            WS-STRBUF-CONTENTS
+            DELIMITED BY SIZE 
+            '"' DELIMITED BY SIZE 
+            ';' DELIMITED BY SIZE 
+            INTO DANE WITH POINTER LICZ
+             
+               END-STRING    
+               
+           .   
+           
+           
+           
+           2200-DATA-NIE-TRYM.
+         
+            STRING 
+            WS-STRBUF-CONTENTS
+            DELIMITED BY SIZE              
+            ';' DELIMITED BY SIZE 
+            INTO DANE WITH POINTER LICZ
+             
+           END-STRING    
+               
+           .  
            
            2200-DATA.
          
@@ -168,7 +216,7 @@
              
            END-STRING    
                
-           .    
+           .   
            
            2200-NUMERIC.
 
@@ -192,3 +240,50 @@
            
            .
            
+           2200-NUMERIC-NIE-TRYM.
+
+       
+
+                                 
+           STRING 
+            WS-STRBUF-CONTENTS
+            DELIMITED BY SIZE              
+            ';' DELIMITED BY SIZE 
+            INTO DANE WITH POINTER LICZ
+             
+           END-STRING
+           
+           .
+           
+           2200-ADD-TO-BUFF-NIE-TRYM.
+               INITIALIZE WS-GL-CTRIM-INPUT
+               MOVE WS-GL-CBUF-IN TO WS-GL-CTRIM-INPUT
+               
+               MOVE 1 TO WS-GL-CTRIM-TEMP
+               MOVE 1 TO WS-GL-CTRIM-START
+               MOVE 0 TO WS-GL-CTRIM-COUNT
+               MOVE 0 TO L-ZEROS
+
+
+           
+      *         TO WS-STRBUF-CONTENTS(WS-STRBUF-COUNT:WS-GL-CTRIM-COUNT)
+      *         TO  WS-STRBUF-CONTENTS
+      *       STRING WS-GL-CBUF-IN(WS-GL-CTRIM-START:WS-GL-CTRIM-COUNT)
+      *       DELIMITED BY SIZE INTO WS-STRBUF-CONTENTS
+      *       END-STRING 
+            
+             ADD WS-GL-CTRIM-COUNT TO WS-STRBUF-COUNT
+             MOVE WS-GL-CBUF-IN
+                TO WS-STRBUF-CONTENTS
+             
+
+   
+      *       DISPLAY "WS-STRBUF-CONTENTS " 
+      *        WS-STRBUF-CONTENTS(WS-STRBUF-COUNT:WS-GL-CTRIM-COUNT)
+    
+                
+             
+             
+               INITIALIZE WS-GL-CBUF-IN
+               .
+               
